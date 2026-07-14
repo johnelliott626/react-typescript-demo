@@ -17,7 +17,7 @@ import { Caption, TableComposable, Tbody, Th, Thead, Tr } from '@patternfly/reac
 import { FormEvent, useState } from 'react';
 import { createUseStyles } from 'react-jss';
 import { useQuery } from 'react-query';
-import { choosableColors, Customer, getCustomers } from 'src/api/CustomerApi';
+import { choosableColors, Color, Customer, getCustomers } from 'src/api/CustomerApi';
 import { ColoredTd } from 'src/components/ColoredTd';
 import Loader from 'src/components/Loader';
 import { useAppContext } from 'src/middleware';
@@ -97,7 +97,7 @@ export default () => {
               onSelect={(_e, value) => {
                 if (typeof value === 'string')
                   // TODO: Fix this when creating the new Color type
-                  setNewUser({ ...newUser, color: value });
+                  setNewUser({ ...newUser, color: value as Color });
                 setSelectToggle(false);
               }}
               id='color'
