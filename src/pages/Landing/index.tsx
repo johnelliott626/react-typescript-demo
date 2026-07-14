@@ -16,8 +16,8 @@ import {
 import { Caption, TableComposable, Tbody, Th, Thead, Tr } from '@patternfly/react-table';
 import { FormEvent, useState } from 'react';
 import { createUseStyles } from 'react-jss';
-import { useQuery } from 'react-query';
-import { choosableColors, Color, Customer, getCustomers } from 'src/api/CustomerApi';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { choosableColors, Color, Customer, Customers, getCustomers, postNewCustomer } from 'src/api/CustomerApi';
 import { ColoredTd } from 'src/components/ColoredTd';
 import Loader from 'src/components/Loader';
 import { SnazzyButton } from 'src/components/SnazzyButton';
@@ -35,7 +35,26 @@ export default () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newUser, setNewUser] = useState<Partial<Customer>>({ isCool: false });
   const [selectToggle, setSelectToggle] = useState(false);
-  // const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
+
+  const addCustomerMutation = useMutation({
+    mutationFn: postNewCustomer,
+    onMutate: async (newCustomer) => {
+      await queryClient.cancelQueries('customers');
+      const previousCustomers = queryClient.getQueryData<Customers>('customers');
+      queryClient.setQueryData<Customers>('customers', (old) => [...(old ?? []), newCustomer]);
+
+      setNewUser({ isCool: false });
+      setIsModalOpen(false);
+      return { previousCustomers };
+    },
+    onError: (error, _newCustomer, context) => {
+      queryClient.setQueryData('customers', () => context?.previousCustomers);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries('customers');
+    },
+  });
 
   // Queries
   const { isLoading, data } = useQuery(
@@ -46,8 +65,7 @@ export default () => {
 
   const onSubmit = (e: FormEvent<Element>) => {
     e.preventDefault();
-    setNewUser({ isCool: false });
-    setIsModalOpen(false);
+    addCustomerMutation.mutate(newUser as Customer);
   };
 
   const columnHeaders = ['Name', 'Age', 'Is Cool'];
@@ -97,7 +115,6 @@ export default () => {
               isOpen={selectToggle}
               onSelect={(_e, value) => {
                 if (typeof value === 'string')
-                  // TODO: Fix this when creating the new Color type
                   setNewUser({ ...newUser, color: value as Color });
                 setSelectToggle(false);
               }}
