@@ -1,21 +1,45 @@
 import {
+  ActionGroup,
   Button,
   Grid,
   GridItem,
 } from '@patternfly/react-core';
-import { Caption, TableComposable, Tbody, Th, Thead, Tr } from '@patternfly/react-table';
+import { ActionsColumn, Caption, TableComposable, Tbody, Th, Thead, Tr, Td, IAction } from '@patternfly/react-table';
 import { useState } from 'react';
-import { useQuery } from 'react-query';
-import { getCustomers } from 'src/api/CustomerApi';
+import { useQuery, useQueryClient, useMutation } from 'react-query';
+import { getCustomers, postCustomers, Customers, Customer } from 'src/api/CustomerApi';
 import { ColoredTd } from 'src/components/ColoredTd';
 import Loader from 'src/components/Loader';
 import { useAppContext } from 'src/middleware';
 import { AddCustomerModal } from 'src/components/AddCustomerModal';
 
-
 export default () => {
-  const { setDarkmode, darkmode } = useAppContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const { setDarkmode, darkmode } = useAppContext();
+  const queryClient = useQueryClient();
+
+  const deleteCustomerMutation = useMutation({
+    mutationFn: (customerToDelete: Customer) => {
+      const customers = queryClient.getQueryData<Customers>('customers') ?? [];
+      const updatedCustomers = customers.filter((c) => c.name !== customerToDelete.name);
+      return postCustomers(updatedCustomers)();
+    },
+    onMutate: async (deleteCustomer: Customer) => {
+      await queryClient.cancelQueries('customers');
+      const previousCustomers = queryClient.getQueryData<Customers>('customers');
+      queryClient.setQueryData<Customers>('customers', (old) =>
+        (old ?? []).filter((customer) => customer.name !== deleteCustomer.name)
+      );
+      return { previousCustomers };
+    },
+    onError: (_error, _customerToDelete, context) => {
+      queryClient.setQueryData('customers', () => context?.previousCustomers);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries('customers');
+    },
+  });
 
   // Queries
   const { isLoading, data } = useQuery(
@@ -25,7 +49,7 @@ export default () => {
   );
 
   const columnHeaders = ['Name', 'Age', 'Is Cool'];
-
+  
   if (isLoading) return <Loader />;
   return (
     <Grid>
@@ -51,19 +75,30 @@ export default () => {
             </Tr>
           </Thead>
           <Tbody>
-            {data?.map(({ name, age, color, isCool }, key: number) => (
-              <Tr key={name + key}>
-                <ColoredTd color={color} dataLabel='name'>
-                  {name}
-                </ColoredTd>
-                <ColoredTd color={color} dataLabel='age'>
-                  {age}
-                </ColoredTd>
-                <ColoredTd color={color} dataLabel='isCool'>
-                  {isCool ? 'Yup' : 'Totally Not!'}
-                </ColoredTd>
-              </Tr>
-            ))}
+            {data?.map((customer: Customer, key: number) => {
+              const rowActions: IAction[] = [
+                {
+                  title: 'Delete',
+                  onClick: () => deleteCustomerMutation.mutate(customer)
+                }
+              ];
+              return(
+                <Tr key={customer.name + key}>
+                  <ColoredTd color={customer.color} dataLabel='name'>
+                    {customer.name}
+                  </ColoredTd>
+                  <ColoredTd color={customer.color} dataLabel='age'>
+                    {customer.age}
+                  </ColoredTd>
+                  <ColoredTd color={customer.color} dataLabel='isCool'>
+                    {customer.isCool ? 'Yup' : 'Totally Not!'}
+                  </ColoredTd>
+                  <Td>
+                    <ActionsColumn items={rowActions} />
+                  </Td>
+                </Tr>
+              );
+            })}
           </Tbody>
         </TableComposable>
       </Grid>
