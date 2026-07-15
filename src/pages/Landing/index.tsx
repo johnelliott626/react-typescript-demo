@@ -1,5 +1,5 @@
 import {
-  ActionGroup,
+  Alert,
   Button,
   Grid,
   GridItem,
@@ -51,15 +51,25 @@ export default () => {
   });
 
   // Queries
-  const { isLoading, data } = useQuery(
+  const { isLoading, data, isError, error, refetch } = useQuery(
     'customers',
     getCustomers,
-    // TODO: Stretch - Use the options object to handle errors.
+    {
+      onError: (error) => {
+        console.error('Error fetching customers:', error);
+      }
+    }
   );
 
   const columnHeaders = ['Name', 'Age', 'Is Cool'];
   
   if (isLoading) return <Loader />;
+  if (isError) return (
+    <Alert variant="danger" title="Failed to load customers">
+      
+      <Button onClick={() => refetch()}>{`${String(error)} Retry`}</Button>
+    </Alert>
+  );
   return (
     <Grid>
       <GridItem sm={6}>
