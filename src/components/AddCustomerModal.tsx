@@ -23,7 +23,7 @@ const useStyles = createUseStyles({
   },
 });
 
-export const AddCustomerModal = ({ isModalOpen, setIsModalOpen }: { isModalOpen: boolean, setIsModalOpen: (isModalOpen: boolean) => void }) => {
+export const AddCustomerModal = ({ isModalOpen, setIsModalOpen, className }: { isModalOpen: boolean, setIsModalOpen: (isModalOpen: boolean) => void, className: string }) => {
   const classes = useStyles();
   const queryClient = useQueryClient();
 
@@ -60,6 +60,7 @@ export const AddCustomerModal = ({ isModalOpen, setIsModalOpen }: { isModalOpen:
         title='Add Customer'
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        className={className}
       >
         <Form onSubmit={onSubmit}>
           <Grid className={classes.inlineText}>

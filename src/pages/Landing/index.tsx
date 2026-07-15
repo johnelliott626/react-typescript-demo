@@ -12,10 +12,19 @@ import { ColoredTd } from 'src/components/ColoredTd';
 import Loader from 'src/components/Loader';
 import { useAppContext } from 'src/middleware';
 import { AddCustomerModal } from 'src/components/AddCustomerModal';
+import { createUseStyles } from 'react-jss';
+
+const useStyles = createUseStyles({
+  darkStyle: {
+    background: '#444',
+    color: 'white',
+    '& th, & td': { color: 'white' },
+  },
+});
 
 export default () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const classes = useStyles();
   const { setDarkmode, darkmode } = useAppContext();
   const queryClient = useQueryClient();
 
@@ -63,9 +72,9 @@ export default () => {
           Add New Customer
         </Button>
       </GridItem>
-      <AddCustomerModal isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen} />
+      <AddCustomerModal isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen} className={darkmode ? classes.darkStyle : ""} />
       <Grid>
-        <TableComposable aria-label='Simple table' variant='compact'>
+        <TableComposable aria-label='Simple table' variant='compact' className={darkmode ? classes.darkStyle : ""}>
           <Caption>Here is a list of your customers:</Caption>
           <Thead>
             <Tr>
